@@ -1,0 +1,6 @@
+flask==0.10.1
+jinja2==2.7.3
+werkzeug==0.10.4
+lxml==3.4.2
+requests==2.6.0
+gunicorn==19.3.0
