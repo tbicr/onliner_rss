@@ -66,7 +66,7 @@ def parse_topic(base, base_page_url, max_items):
         for item in reversed(page.cssselect('.b-messages-thread li.msgpost:not(.msgfirst)')):
             message = {}
             message['id'] = item.cssselect('.b-msgpost-txt small a')[0].attrib['href']
-            message['url'] = urllib.parse.urljoin(base_page_url, page_url) + message['id']
+            message['url'] = message['id']
             message['author'] = item.cssselect('.b-mtauthor-i>.mtauthor-nickname a')[0].text_content()
             message['title'] = title
             message['content'] = lxml.etree.tostring(item.cssselect('.content')[0],
