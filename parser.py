@@ -6,6 +6,30 @@ import lxml.html
 import requests
 
 
+_dates = {
+    'января': '01',
+    'февраля': '02',
+    'марта': '03',
+    'апреля': '04',
+    'мая': '05',
+    'июня': '06',
+    'июля': '07',
+    'августа': '08',
+    'сентября': '09',
+    'октября': '10',
+    'ноября': '11',
+    'декабря': '12',
+}
+
+
+def _normalize_date(date):
+    for rus, num in _dates.items():
+        if rus in date:
+            date = date.replace(rus, num)
+            break
+    return datetime.datetime.strptime(date, '%d %m %Y %H:%M')
+
+
 def parse_icon():
     return requests.get('http://content.onliner.by/pic/favicon.ico').content
 
@@ -29,8 +53,8 @@ def parse_topic(base_page_url, max_items):
             message['title'] = title
             message['content'] = lxml.etree.tostring(item.cssselect('.content')[0],
                                                      pretty_print=True, method='html').decode()
-            message['updated'] = datetime.datetime.utcnow()
-            message['published'] = datetime.datetime.utcnow()
+            message['published'] = _normalize_date(item.cssselect('.msgpost-date span')[0].text_content())
+            message['updated'] = message['published']
             messages.append(message)
             if len(messages) >= max_items:
                 break
