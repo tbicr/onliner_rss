@@ -1,4 +1,5 @@
 import logging
+import urllib.parse
 
 from flask import Flask, request, redirect, url_for, render_template, Response
 from flask.ext.cache import Cache
@@ -20,7 +21,9 @@ cache = Cache(app)
 
 
 def _args_cache_key():
-    return 'view/{}/{}'.format(request.path, request.args.get('url'))
+    url = request.args.get('url')
+    topic = url and urllib.parse.parse_qs(urllib.parse.urlsplit(url).query).get('t', [None])[0]
+    return 'view/{}/{}'.format(request.path, topic)
 
 
 @app.route('/')
