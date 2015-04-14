@@ -30,11 +30,21 @@ def _normalize_date(date):
     return datetime.datetime.strptime(date, '%d %m %Y %H:%M')
 
 
-def parse_icon():
-    return requests.get('http://content.onliner.by/pic/favicon.ico').content
+def parse_file(base, file):
+    response = requests.get(urllib.parse.urljoin(base, file))
+    return {
+        'response': response.content,
+        'content_type': response.headers.get('Content-Type'),
+    }
 
 
-def parse_topic(base_page_url, max_items):
+def parse_icon(base):
+    return parse_file(base, '/pic/favicon.ico')
+
+
+def parse_topic(base, base_page_url, max_items):
+    if not urllib.parse.urlparse(base_page_url).netloc:
+        base_page_url = urllib.parse.urljoin(base, base_page_url)
     base_page = lxml.html.fromstring(requests.get(base_page_url).content)
     try:
         page_url = base_page.cssselect('.pages-fastnav li:not(.page-next) a')[-1].attrib['href']
@@ -44,6 +54,14 @@ def parse_topic(base_page_url, max_items):
     max_pages = max_items // 20 + 1
     while max_pages >= 0:
         page = lxml.html.fromstring(requests.get(urllib.parse.urljoin(base_page_url, page_url)).content)
+        for node in page.xpath('//*[@src]'):
+            url = node.get('src')
+            url = urllib.parse.urljoin(base_page_url, url)
+            node.set('src', url)
+        for node in page.xpath('//*[@href]'):
+            href = node.get('href')
+            href = urllib.parse.urljoin(base_page_url, href)
+            node.set('href', href)
         title = page.cssselect('h1')[0].text_content()
         for item in reversed(page.cssselect('.b-messages-thread li.msgpost:not(.msgfirst)')):
             message = {}
