@@ -30,6 +30,13 @@ def _normalize_date(date):
     return datetime.datetime.strptime(date, '%d %m %Y %H:%M')
 
 
+def _expand_links(page_url, url):
+    try:
+        return urllib.parse.urljoin(page_url, url)
+    except ValueError:
+        return url
+
+
 def parse_file(base, file):
     response = requests.get(urllib.parse.urljoin(base, file))
     return {
@@ -57,11 +64,11 @@ def parse_topic(base, base_page_url, max_items):
         page = lxml.html.fromstring(requests.get(page_url).content)
         for node in page.xpath('//*[@src]'):
             url = node.get('src')
-            url = urllib.parse.urljoin(page_url, url)
+            url = _expand_links(page_url, url)
             node.set('src', url)
         for node in page.xpath('//*[@href]'):
             href = node.get('href')
-            href = urllib.parse.urljoin(page_url, href)
+            href = _expand_links(page_url, href)
             node.set('href', href)
         title = page.cssselect('h1')[0].text_content()
         for item in reversed(page.cssselect('.b-messages-thread li.msgpost:not(.msgfirst)')):
