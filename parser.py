@@ -52,7 +52,8 @@ def parse_icon(base):
 def parse_topic(base, base_page_url, max_items):
     if not urllib.parse.urlparse(base_page_url).netloc:
         base_page_url = urllib.parse.urljoin(base, base_page_url)
-    base_page = lxml.html.fromstring(requests.get(base_page_url).content)
+    content = requests.get(base_page_url).content
+    base_page = lxml.html.fromstring(content)
     try:
         page_url = base_page.cssselect('.pages-fastnav li:not(.page-next) a')[-1].attrib['href']
     except IndexError:
@@ -61,7 +62,8 @@ def parse_topic(base, base_page_url, max_items):
     max_pages = max_items // 20 + 1
     while max_pages >= 0:
         page_url = urllib.parse.urljoin(base_page_url, page_url)
-        page = lxml.html.fromstring(requests.get(page_url).content)
+        content = requests.get(page_url).content
+        page = lxml.html.fromstring(content)
         for node in page.xpath('//*[@src]'):
             url = node.get('src')
             url = _expand_links(page_url, url)
