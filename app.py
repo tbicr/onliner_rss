@@ -7,7 +7,7 @@ from flask import Flask, request, redirect, url_for, render_template, Response
 from flask.ext.cache import Cache
 from werkzeug.contrib.atom import AtomFeed
 
-from parser import parse_topic, parse_icon
+from parser import parse_topic, parse_icon, BadPageException
 
 
 class DetailedErrorApp(Flask):
@@ -84,11 +84,14 @@ def home():
 @app.route('/feed.atom')
 @cache.cached(timeout=5 * 60, key_prefix=_args_cache_key)
 def feed():
-    title, messages = parse_topic(app.config.get('BASE'), request.args.get('url'), app.config.get('MAX_ITEMS'))
-    feed = AtomFeed(title, feed_url=request.url, url=request.url_root, icon=url_for('favicon'))
-    for message in messages:
-        feed.add(**message)
-    return feed.get_response()
+    try:
+        title, messages = parse_topic(app.config.get('BASE'), request.args.get('url'), app.config.get('MAX_ITEMS'))
+        feed = AtomFeed(title, feed_url=request.url, url=request.url_root, icon=url_for('favicon'))
+        for message in messages:
+            feed.add(**message)
+        return feed.get_response()
+    except BadPageException as err:
+        return str(err), 500
 
 
 @app.route('/favicon.ico')

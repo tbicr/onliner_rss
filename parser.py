@@ -22,6 +22,17 @@ _dates = {
 }
 
 
+_bad_pages_tokens = [
+    ('К сожалению, в настоящий момент на сайте'.encode(),
+     'самым жесточайшим образом проводятся ремонтные работы.'.encode(),
+     'Нам страшно жаль, и мы приносим извинения за неудобства.'.encode()),
+]
+
+
+class BadPageException(Exception):
+    pass
+
+
 def _normalize_date(date):
     for rus, num in _dates.items():
         if rus in date:
@@ -49,10 +60,21 @@ def parse_icon(base):
     return parse_file(base, '/pic/favicon.ico')
 
 
+def _get_page_or_raise(url):
+    response = requests.get(url)
+    if response.status_code != 200:
+        raise BadPageException('Cannot fetch page {} (status code {})'.format(url, response.status_code))
+    content = response.content
+    for tokens in _bad_pages_tokens:
+        if all(token in content for token in tokens):
+            raise BadPageException('Bad page content for page {}'.format(url))
+    return content
+
+
 def parse_topic(base, base_page_url, max_items):
     if not urllib.parse.urlparse(base_page_url).netloc:
         base_page_url = urllib.parse.urljoin(base, base_page_url)
-    content = requests.get(base_page_url).content
+    content = _get_page_or_raise(base_page_url)
     base_page = lxml.html.fromstring(content)
     try:
         page_url = base_page.cssselect('.pages-fastnav li:not(.page-next) a')[-1].attrib['href']
@@ -62,7 +84,7 @@ def parse_topic(base, base_page_url, max_items):
     max_pages = max_items // 20 + 1
     while max_pages >= 0:
         page_url = urllib.parse.urljoin(base_page_url, page_url)
-        content = requests.get(page_url).content
+        content = _get_page_or_raise(page_url)
         page = lxml.html.fromstring(content)
         for node in page.xpath('//*[@src]'):
             url = node.get('src')
